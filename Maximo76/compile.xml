@@ -9,7 +9,7 @@
 			<fileset dir="/opt/IBM/SMP/maximo/tools/maximo/en/automationscripts/">
 				<include name="**/*"/>
 			</fileset>
-			<fileset dir="/home/developer/maximo/maximo/applications/maximo/properties/product/">
+			<fileset dir="/opt/IBM/SMP/maximo/applications/maximo/properties/product/">
 				<include name="gbsibm*.xml"/>
 			</fileset>
 		</delete>

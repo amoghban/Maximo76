@@ -7,7 +7,7 @@
 	<property name="mxs.out.dir" value="/root/git/Maximo76/presentations/"/>
 	<property name="maximo.presentations.dir" value="/root/git/Maximo76/presentations//solution-previous"/>
 	<property name="sol.presentations.dir" value="/root/git/Maximo76/presentations//solution"/>
-	<property name="maximo.tools.dir" value="/home/developer/maximo/maximo/tools/maximo"/>
+	<property name="maximo.tools.dir" value="/opt/IBM/SMP/maximo/tools/maximo/"/>
 	<property name="mxs.file" value="V7600_XX.mxs"/>
 	
 	<echo>MXS file used = ${mxs.file}</echo>
