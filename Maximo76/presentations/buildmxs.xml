@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+
+<project name="Build MXS" default="buildmxs" basedir="/opt/IBM/SMP/maximo/tools/maximo/internal">
+
+	
+	<property environment="env"/>
+	<property name="mxs.out.dir" value="/root/git/Maximo76/presentations/"/>
+	<property name="maximo.presentations.dir" value="/root/git/Maximo76/presentations//solution-previous"/>
+	<property name="sol.presentations.dir" value="/root/git/Maximo76/presentations//solution"/>
+	<property name="maximo.tools.dir" value="/home/developer/maximo/maximo/tools/maximo"/>
+	<property name="mxs.file" value="V7600_XX.mxs"/>
+	
+	<echo>MXS file used = ${mxs.file}</echo>
+
+	<description>
+		This file is used for building mxs scripts.
+	</description>
+	
+	
+	<target name="buildmxs">
+			<!-- Create the baseline presentationSet file -->
+			<echo>Creating the baseline presentationset file</echo>
+			<concat destfile="${mxs.out.dir}/BASELASTRELEASE.xml">
+				<fileset dir="${maximo.presentations.dir}" >
+					<include name="**/*.xml" />
+				</fileset>	
+				<!-- Note: There is an extra space following UTF-8 so that it is not deleted by the replace task -->
+				<header filtering="no" trimleading="yes">&lt;?xml version="1.0" encoding="UTF-8" ?&gt;
+				  	&lt;presentationset id="presentationset"&gt;
+				</header>
+				<footer filtering="no" trimleading="yes">
+				  	&lt;/presentationset&gt;
+				</footer>
+			</concat>
+			<!--sleep milliseconds="2000"/-->
+			<replace file="${mxs.out.dir}/BASELASTRELEASE.xml" token="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;" />
+			<!--sleep milliseconds="100"/-->
+			<replace file="${mxs.out.dir}/BASELASTRELEASE.xml" token="&lt;?xml version=&quot;1.0&quot; encoding=&quot;ISO-8859-1&quot;?&gt;" />
+			<!--sleep milliseconds="100"/-->
+			<!-- Create the solution-extension presentationSet file -->
+			<echo>Creating the solution-extension presentationset file</echo>
+			<concat destfile="${mxs.out.dir}/BASENEWRELEASE.xml">
+				
+				<fileset dir="${sol.presentations.dir}" >
+					<include name="**/*.xml" />
+				</fileset>	
+				<!-- Note: There is an extra space following UTF-8 so that it is not deleted by the replace task    -->
+				<header filtering="no" trimleading="yes">&lt;?xml version="1.0" encoding="UTF-8" ?&gt;
+				  	&lt;presentationset id="presentationset"&gt;
+				</header>
+				<footer filtering="no" trimleading="yes">
+				  	&lt;/presentationset&gt;
+				</footer>
+			</concat> 
+			<!--sleep milliseconds="100"/-->
+			<replace file="${mxs.out.dir}/BASENEWRELEASE.xml" token="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;" />
+			<!--sleep milliseconds="100"/-->
+			<replace file="${mxs.out.dir}/BASENEWRELEASE.xml" token="&lt;?xml version=&quot;1.0&quot; encoding=&quot;ISO-8859-1&quot;?&gt;" />
+			<!--sleep milliseconds="100"/-->
+			
+			<!-- Run the mxdiff task which generates the *.mxs file -->
+			<echo>Running the screen-diff utility on the presentation-sets.</echo>
+			<exec executable="${maximo.tools.dir}/internal/mxdiff.sh" failonerror="true">
+				<env key="JAVA_HOME" value="/usr/lib/jvm/java-8-jdk"/>  
+				<arg line="-d -b${mxs.out.dir}/BASELASTRELEASE.xml -m${mxs.out.dir}/BASENEWRELEASE.xml -t${mxs.out.dir}/${mxs.file}" />
+			</exec>
+			<echo>Process Completed...</echo>
+			
+	</target>
+	
+	
+</project>
