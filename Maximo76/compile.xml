@@ -1,0 +1,54 @@
+<project name="compilehelper" default="compile">
+	<property name="target.dir" value="/opt/IBM/SMP/maximo/" />
+	<property name="build.rmic" value="sun"/>
+	<property name="maximo.stubversion" value="1.2"/>
+
+	<target name="compile">
+
+		<delete>
+			<fileset dir="/opt/IBM/SMP/maximo/tools/maximo/en/automationscripts/">
+				<include name="**/*"/>
+			</fileset>
+			<fileset dir="/home/developer/maximo/maximo/applications/maximo/properties/product/">
+				<include name="gbsibm*.xml"/>
+			</fileset>
+		</delete>
+		<copy todir="${target.dir}">
+			<fileset dir=".">
+				<include name="applications/maximo/maximouiweb/webmodule/webclient/**/*" />
+				<include name="applications/maximo/properties/**/*" />
+				<include name="tools/maximo/en/**/*" />
+				<include name="tools/maximo/**/*" />
+				<include name="reports/birt/reports/**/*" />
+			</fileset>
+		</copy>
+
+		<rmic base="${target.dir}/applications/maximo/businessobjects/classes" includes="com/ibm/gbs/**/*.class" stubversion="${maximo.stubversion}" classpath="${target.dir}/applications/maximo/lib/json4j.jar;${target.dir}/applications/maximo/lib/icu4j.jar">
+			<exclude name="**/*Remote.class"/>
+			<exclude name="**/*CronTask.class"/>
+			<exclude name="**/*EditSegLogger.class"/>
+			<exclude name="**/*Cron.class"/>
+			<exclude name="**/*Fld*.class"/>
+			<exclude name="**/*Comparator*.class"/>
+			<exclude name="**/*Util.class"/>
+			<exclude name="**/*Constants.class"/>
+			<exclude name="**/*Transformation.class"/>
+			<exclude name="**/*Structure.class"/>
+			<exclude name="**/*Listener.class"/>
+			<exclude name="**/*Filter.class"/>
+			<exclude name="**/*Handler.class"/>
+			<exclude name="**/*Action.class"/>
+			<exclude name="**/*Process.class"/>
+			<exclude name="**/*Condition.class"/>
+			<exclude name="**/*Cache.class"/>
+		</rmic>
+
+		<copy todir="/opt/IBM/SMP/maximo/maximofolders/export/schema">
+			<fileset dir="documentation/gbsibm/meaglobal/schema/external">
+				<include name="**/*" />
+			</fileset>
+		</copy>
+
+	</target>
+
+</project>

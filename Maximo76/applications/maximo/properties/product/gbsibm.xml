@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<product>
+	<name>IBM Maximo Extensions</name>
+	<version>
+		<major>1</major>
+		<minor>0</minor>
+		<modlevel>0</modlevel>
+		<patch>1</patch>
+		<build>BUILDXXX</build>
+	</version>
+	<dbmaxvarname>GBSIBM</dbmaxvarname>
+	<dbscripts>gbsibm</dbscripts> 
+	<dbversion>V7600-000</dbversion>
+	<lastdbversion>V7600-000</lastdbversion>
+	<depends>mam</depends>
+	<extensions>		
+	</extensions>
+</product>
