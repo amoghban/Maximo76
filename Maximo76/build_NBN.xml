@@ -1,0 +1,799 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+	<project name="build" xmlns:ivy="antlib:org.apache.ivy.ant" xmlns:aspectj="antlib:org.aspectj">
+
+	  <property file="build.properties"/>
+
+	  <property environment="env"/>
+	  <property name="javac.executable" value="${env.JAVA_HOME}/bin/javac"/>
+	  <property name="rmic.executable" value="${env.JAVA_HOME}/bin/rmic"/>
+
+	  <!-- Maximo build variables -->
+	  <property name="max.wwm.buildNumber" value="${env.PIPELINE_LABEL}"/>
+	  <property name="max.wwm.majorVersion" value="${env.WWM_MAJOR_VERSION}"/>
+	  <property name="max.wwm.minorVersion" value="${env.WWM_MINOR_VERSION}"/>
+	  <property name="max.wwm.patchVersion" value="${env.WWM_PATCH_VERSION}"/>
+	  <condition property="max.master.smp" value="/opt/ibm/build/maximo/${max.wwm.majorVersion}.${max.wwm.minorVersion}.${max.wwm.patchVersion}_SMP">
+	    <available file="/opt/ibm/build/maximo/${max.wwm.majorVersion}.${max.wwm.minorVersion}.${max.wwm.patchVersion}_SMP"/>
+	  </condition>
+	  <condition property="max.master.smp" value="/opt/ibm/build/maximo/${max.wwm.majorVersion}.${max.wwm.minorVersion}_SMP">
+	    <available file="/opt/ibm/build/maximo/${max.wwm.majorVersion}.${max.wwm.minorVersion}_SMP"/>
+	  </condition>
+	  <condition property="max.master.smp" value="/opt/ibm/build/maximo/${max.wwm.majorVersion}_SMP">
+	    <available file="/opt/ibm/build/maximo/${max.wwm.majorVersion}_SMP"/>
+	  </condition>
+	  <condition property="max.master.smp" value="/opt/ibm/build/maximo/ir${max.wwm.majorVersion}.${max.wwm.minorVersion}_SMP">
+	    <available file="/opt/ibm/build/maximo/ir${max.wwm.majorVersion}.${max.wwm.minorVersion}_SMP"/>
+	  </condition>
+	  <condition property="max.master.smp" value="/opt/ibm/build/maximo/ir${max.wwm.majorVersion}_SMP">
+	    <available file="/opt/ibm/build/maximo/ir${max.wwm.majorVersion}_SMP"/>
+	  </condition>
+	  <echo message="Using SMP ${max.master.smp}"/>
+
+	  <property name="max.app.build.base" value="${env.PWD}"/>
+	  <property name="max.tools.dir" value="${max.app.build.base}/tools"/>
+	  <property name="max.oracleapis.dir" value="${max.app.build.base}/ORACLEAPIS"/>
+	  <property name="max.workspace" value="${max.app.build.base}/.."/>
+	  <property name="max.artefacts" value="${max.workspace}/artifacts"/>
+	  <property name="max.allconfig.dir" value="${max.artefacts}/config_per_environment"/>
+	  <property name="max.config.dir" value="${max.allconfig.dir}/config"/>
+	  <property name="max.raw.config.dir" value="${max.app.build.base}/config.properties"/>
+	  <property name="max.ejb.dir" value="${max.allconfig.dir}/ejb"/>
+	  <property name="max.deployment.descriptors.dir" value="${max.allconfig.dir}/deployment_descriptors"/>
+	  <property name="max.deployment.descriptor.archive.dir" value="${max.app.build.base}/documentation/gbsnbn/MaximoLDAPConfiguration"/>
+	  <property name="max.properties.dir" value="${max.app.build.base}/applications/maximo/properties"/>
+	  <property name="max.product.dir" value="${max.app.build.base}/applications/maximo/properties/product"/>
+	  <property name="max.smp" value="${max.workspace}/SMP"/>
+	  <property name="max.smp.properties.dir" value="${max.smp}/maximo/applications/maximo/properties"/>
+	  <property name="max.smp.product.dir" value="${max.smp.properties.dir}/product"/>
+	  <property name="max.smp.tools.dir" value="${max.smp}/maximo/tools/maximo"/>
+	  <property name="max.usefulbox" value="wwm-maximo-build"/>
+	  <property name="max.output" value="${max.workspace}/${max.usefulbox}"/>
+	  <property name="max.ejb.application.dir" value="${max.app.build.base}/documentation/gbsnbn/websphereEjbConfiguration"/>
+
+	  <!-- Maximo RPM directories -->
+	  <property name="max.rpm.build.dir" value="${max.workspace}/rpmbuild"/>
+	  <property name="max.rpm.maximo.dir" value="${max.rpm.build.dir}/opt/ibm/build/maximo"/>
+	  <property name="max.rpm.ear.dir" value="${max.rpm.maximo.dir}/ear"/>
+	  <property name="max.rpm.ops.scripts.dir" value="${max.rpm.maximo.dir}/support/operationscripts"/>
+	  <property name="max.rpm.smp.dir" value="${max.rpm.maximo.dir}/SMP"/>
+	  <property name="max.rpm.properties.dir" value="${max.rpm.smp.dir}/maximo/applications/maximo/properties"/>
+	  <property name="max.rpm.product.dir" value="${max.rpm.properties.dir}/product"/>
+	  <property name="max.rpm.config.dir" value="${max.rpm.maximo.dir}/allconfig"/>
+	  <property name="max.rpm.maximofolders.dir" value="${max.rpm.build.dir}/maximofolders"/>
+	  <property name="max.rpm.release.name" value="${env.WWM_RELEASE_BRANCH_NAME}"/>
+	  <!--create conf directory to support https -->  
+	  <property name="max.rpm.meaweb.dir" value="${max.rpm.smp.dir}/maximo/applications/maximo/meaweb/webmodule/WEB-INF/conf"/>
+
+	  <!-- Base Directories -->
+	  <property name="builds.dir" value="../wwm-maximo-build"/>
+	  <property name="target.dir" value="./target"/>
+	  <property name="src.release.dir" value="."/>
+	  <property name="dest.release.dir" value="${builds.dir}/${max.wwm.buildNumber}"/>
+	  <property name="smp.dir" value="../SMP"/>
+
+	  <!-- Libs -->
+	  <property name="src.lib.dir" value="${smp.dir}/maximo/applications/maximo/lib"/>
+	  <property name="dest.lib.dir" value="${dest.release.dir}/applications/maximo/lib"/>
+	  <property name="ui.src.lib.dir" value="${src.release.dir}/applications/maximo/maximouiweb/webmodule/WEB-INF/lib"/>
+	  <property name="ui.dest.lib.dir" value="${dest.release.dir}/applications/maximo/maximouiweb/webmodule/WEB-INF/lib"/>
+	  <property name="maximo.lib.dir" value="${smp.dir}/maximo/applications/maximo/lib"/>
+	  <property name="maximo.ui.lib.dir" value="${smp.dir}/maximo/applications/maximo/maximouiweb/webmodule/WEB-INF/lib"/>
+
+	  <!-- Maximo Business Classes -->
+	  <property name="src.businessobjects.src.dir" value="${src.release.dir}/applications/maximo/businessobjects/src"/>
+	  <property name="dest.businessobjects.src.dir" value="${dest.release.dir}/applications/maximo/businessobjects/src"/>
+	  <property name="dest.businessobjects.classes.dir" value="${dest.release.dir}/applications/maximo/businessobjects/classes"/>
+	  <property name="maximo.businessobjects.classes.dir" value="${smp.dir}/maximo/applications/maximo/businessobjects/classes"/>
+	  <property name="maximo.mboejb.classes.dir" value="${smp.dir}/maximo/applications/maximo/mboejb/ejbmodule"/>
+
+	  <!-- Maximo User Interface Classes -->
+	  <property name="src.maximoui.src.dir" value="${src.release.dir}/applications/maximo/maximouiweb/src"/>
+	  <property name="dest.maximoui.src.dir" value="${dest.release.dir}/applications/maximo/maximouiweb/src"/>
+	  <property name="dest.maximoui.classes.dir" value="${dest.release.dir}/applications/maximo/maximouiweb/webmodule/WEB-INF/classes"/>
+	  <property name="maximo.maximoui.classes.dir" value="${smp.dir}/maximo/applications/maximo/maximouiweb/webmodule/WEB-INF/classes"/>
+
+	    <!-- Common Web Interface Classes -->
+	  <property name="src.commonweb.src.dir" value="${src.release.dir}/applications/maximo/commonweb/src"/>
+	  <property name="dest.commonweb.src.dir" value="${dest.release.dir}/applications/maximo/commonweb/src"/>
+	  <property name="dest.commonweb.classes.dir" value="${dest.release.dir}/applications/maximo/commonweb/classes"/>
+	  <property name="maximo.commonweb.classes.dir" value="${smp.dir}/maximo/applications/maximo/commonweb/classes"/>
+	  
+	  <!-- Maximo Tools Classes -->
+	  <property name="src.maximotools.dir" value="${src.release.dir}/tools/maximo"/>
+	  <property name="dest.maximotools.dir" value="${dest.release.dir}/tools/maximo"/>
+	  <property name="src.maximotools.src.dir" value="${src.release.dir}/tools/maximo/src"/>
+	  <property name="dest.maximotools.src.dir" value="${dest.release.dir}/tools/maximo/src"/>
+	  <property name="dest.maximotools.classes.dir" value="${dest.release.dir}/tools/maximo/classes"/>
+	  <property name="maximo.maximotools.classes.dir" value="${smp.dir}/maximo/tools/maximo/classes"/>
+
+	  <!-- Maximo User Interface Other -->
+	  <property name="src.webclient.src.dir" value="${src.release.dir}/applications/maximo/maximouiweb/webmodule/webclient"/>
+	  <property name="dest.webclient.src.dir" value="${dest.release.dir}/applications/maximo/maximouiweb/webmodule/webclient"/>
+	  
+	  <!-- Properties -->
+	  <property name="src.props.src.dir" value="${src.release.dir}/applications/maximo/properties"/>
+	  <property name="dest.props.src.dir" value="${dest.release.dir}/applications/maximo/properties"/>
+	  <property name="dest.product.xml" value="${dest.props.src.dir}/product/gbsnbn.xml"/>
+
+	  <!-- Scripts -->
+	  <property name="src.scripts.dir" value="${src.release.dir}/tools/maximo/en/gbsnbn"/>
+	  <property name="dest.scripts.dir" value="${dest.release.dir}/tools/maximo/en/gbsnbn"/>
+
+	  <!-- documents -->
+	  <property name="src.docs.dir" value="${src.release.dir}/documentation/gbsnbn"/>
+	  <property name="dest.docs.dir" value="${dest.release.dir}/documentation/gbsnbn"/>
+
+	  <taskdef resource="net/sf/antcontrib/antlib.xml"/>
+
+	  <taskdef resource="net/sf/antcontrib/antlib.xml">
+	    <classpath>
+	      <pathelement location="lib/ant-contrib-1.0b3.jar"/>
+	    </classpath>
+	  </taskdef>
+
+	  <path id="dest.lib.path">
+	    <pathelement location="${dest.businessobjects.classes.dir}"/>
+	    <pathelement location="${dest.maximoui.classes.dir}"/>
+	    <fileset dir="${maximo.lib.dir}" includes="*.jar"/>
+	    <fileset dir="${maximo.ui.lib.dir}" includes="*.jar"/>
+	    <pathelement location="${maximo.businessobjects.classes.dir}"/>
+	    <pathelement location="${maximo.maximoui.classes.dir}"/>
+	    <fileset dir="${src.lib.dir}" includes="*.jar"/>
+	    <pathelement location="${maximo.maximotools.classes.dir}"/>
+	    <pathelement location="${maximo.mboejb.classes.dir}"/>
+		<pathelement location="${dest.commonweb.classes.dir}"/>
+		<pathelement location="${maximo.commonweb.classes.dir}"/>
+	  </path>
+
+	  <include file="config/build-macros.xml"/>
+	  <import file="config/build-test.xml"/>
+	  <import file="config/build-package.xml"/>
+	  <import file="config/build-maximo.xml"/>
+
+	   <target name="setSkinsFolders" description="Sets SKINs property to copy the NBN customisation images in to the new skin folder generated by SMP as a result of upgrade">
+	     <!-- Maximo User Interface Other  NBN customization only -->
+	     <property name="src.webclient.src.dir.customizations" value="${src.release.dir}/applications/maximo/maximouiweb/webmodule/webclient/skins/skinsCustomizations"/>
+	     <basename property="basename.src.dir.customizations" file="${src.webclient.src.dir.customizations}"/>
+	     <dirset id="dirset" dir="${src.release.dir}/applications/maximo/maximouiweb/webmodule/webclient/skins" casesensitive="yes">
+	       <include name="skins-*"/>
+	       <exclude name="${basename.src.dir.customizations}"/>
+	     </dirset>
+	     <!-- setSkinsFolders: [echo] "DirSET: skins-20160316-1237;skins-20160825-1511" Property "dest.release.dir" has not been set -->
+	     <property name="dest.webclient.src.dir.customizations" refid="dirset"/>
+	     <echo>"DirSET: ${dest.webclient.src.dir.customizations}"</echo>
+	     <fail message="Too may directory starting with skins found">
+	       <condition>
+	         <contains string="${dest.webclient.src.dir.customizations}" substring=";"/>
+	       </condition>
+	     </fail>
+	  </target>
+	  
+	  <target name="fetchLibs" description="Retrieve dependencies with ivy">
+	    <ivy:settings file="config/ivysettings.xml"/>
+	    <ivy:retrieve sync="true" />
+	  </target>
+
+	  <target name="banner" description="A general banner to make output stand out">
+	    <echo>+----------------------------------------------------------------------</echo>
+	    <echo>|</echo>
+	    <echo>|  ${message}</echo>
+	    <echo>|</echo>
+	    <echo>+----------------------------------------------------------------------</echo>
+	  </target>
+
+	  <target name="copyAll" description="Copy all files in source directory to destination directory">
+	    <copy todir="${destination.dir}">
+	      <fileset dir="${source.dir}">
+	        <include name="**\*.*"/>
+	        <include name="**\*"/>
+	      </fileset>
+	    </copy>
+	  </target>
+
+	  <target name="init" description="Initializes the directories and file names">
+	    <property name="maximo.stubversion" value="1.2"/>
+	    <property name="build.rmic" value="sun"/>
+	  </target>
+
+	  <target name="clean" description="Clean">
+	    <echo>Cleaning Release Directory</echo>
+	    <delete dir="${dest.release.dir}"/>
+	  </target>
+
+	  <target name="libs" description="Create Libs">
+	    <echo>Copying Jar Files from ${src.lib.dir} to ${dest.lib.dir}</echo>
+	    <antcall target="copyAll">
+	      <param name="source.dir" value="${src.lib.dir}"/>
+	      <param name="destination.dir" value="${dest.lib.dir}"/>
+	    </antcall>
+	  </target>
+
+	  <target name="businessobjects" description="Create Business Object Resources">
+	    <echo>Copying Source Files from ${src.businessobjects.src.dir} to ${dest.businessobjects.src.dir}</echo>
+	    <copy todir="${dest.businessobjects.src.dir}">
+	      <fileset dir="${src.businessobjects.src.dir}">
+	        <include name="**\*.java"/>
+	      </fileset>
+	    </copy>
+	    <echo>Compile Classes with ${javac.executable}</echo>
+	    <echo>${toString:dest.lib.path}</echo>
+	    <mkdir dir="${dest.businessobjects.classes.dir}"/>
+		<copy todir="${dest.businessobjects.classes.dir}">
+	      <fileset dir="${src.businessobjects.src.dir}">
+	        <include name="**\*.in"/>
+	      </fileset>
+	    </copy>
+	    <javac
+	      srcdir="${dest.businessobjects.src.dir}"
+	      destdir="${dest.businessobjects.classes.dir}"
+	      classpath="${toString:dest.lib.path}"
+	      debug="on"
+	      source="1.6"
+	      target="1.6"
+	      fork="yes"
+	      executable="${javac.executable}" taskname="ibm-java6">
+	      <include name="**/*.java"/>
+	      <exclude name="**/GBSSingleFileLoadCronTask.java"/>
+	    </javac>
+	    <echo>RMIC Classes</echo>
+	    <rmic base="${dest.businessobjects.classes.dir}" verify="true" stubversion="1.2">
+	      <classpath refid="dest.lib.path"/>
+	      <include name="**\*.class"/>
+	    </rmic>
+	  </target>
+
+	  <target name="maximoui" description="Create Maximo User Interface Resources">
+	    <echo>Copying Source Files from ${src.maximoui.src.dir} to ${dest.maximoui.src.dir}</echo>
+	    <copy todir="${dest.maximoui.src.dir}">
+	      <fileset dir="${src.maximoui.src.dir}">
+	        <include name="**\*.java"/>
+	      </fileset>
+	    </copy>
+	    <echo>Compiling Classes (Classpath ${toString:dest.lib.path})</echo>
+	    <mkdir dir="${dest.maximoui.classes.dir}"/>
+	    <javac
+	      srcdir="${src.maximoui.src.dir}"
+	      destdir="${dest.maximoui.classes.dir}"
+	      classpath="${toString:dest.lib.path}"
+	      debug="on"
+	      source="1.6"
+	      target="1.6"
+	      fork="yes"
+	      executable="${javac.executable}" taskname="ibm-java6">
+	      <include name="**/*.java"/>
+	    </javac>
+	  </target>
+	  
+	    <target name="commonweb" description="Create Common Web Resources">
+	    <echo>Copying Source Files from ${src.commonweb.src.dir} to ${dest.commonweb.src.dir}</echo>
+	    <copy todir="${dest.commonweb.src.dir}">
+	      <fileset dir="${src.commonweb.src.dir}">
+	        <include name="**\*.java"/>
+	      </fileset>
+	    </copy>
+	    <echo>Compiling Classes (Classpath ${toString:dest.lib.path})</echo>
+	    <mkdir dir="${dest.commonweb.classes.dir}"/>
+	    <javac
+	      srcdir="${src.commonweb.src.dir}"
+	      destdir="${dest.commonweb.classes.dir}"
+	      classpath="${toString:dest.lib.path}"
+	      debug="on"
+	      source="1.6"
+	      target="1.6"
+	      fork="yes"
+	      executable="${javac.executable}" taskname="ibm-java6">
+	      <include name="**/*.java"/>
+	    </javac>
+	  </target>
+
+	  <target name="maximotools" description="Create Maximo Tools Resources">
+	    <echo>Copying Source Files from ${src.maximotools.src.dir} to ${dest.maximotools.src.dir} for compilation</echo>
+	    <copy todir="${dest.maximotools.dir}">
+	      <fileset dir="${src.maximotools.dir}">
+	        <include name="**\*.sh"/>
+	        <include name="**\*.xml"/>
+	      </fileset>
+	    </copy>
+	    <copy todir="${dest.maximotools.src.dir}">
+	      <fileset dir="${src.maximotools.src.dir}">
+	        <include name="**\*.java"/>
+	      </fileset>
+	    </copy>
+	    <echo>Compiling Classes (Classpath ${toString:dest.lib.path})</echo>
+	    <mkdir dir="${dest.maximotools.classes.dir}"/>
+	    <javac
+	      srcdir="${src.maximotools.src.dir}"
+	      destdir="${dest.maximotools.classes.dir}"
+	      classpath="${toString:dest.lib.path}"
+	      debug="on"
+	      source="1.6"
+	      target="1.6"
+	      fork="yes"
+	      executable="${javac.executable}" taskname="ibm-java6">
+	      <include name="**/*.java"/>
+	    </javac>
+	  </target>
+
+	  <target name="static" description="Copy static files from src to dest">
+	    <echo>Copying Source Files from ${src.webclient.src.dir} to ${dest.webclient.src.dir}</echo>
+	    <copy todir="${dest.webclient.src.dir}">
+	    <fileset dir="${src.webclient.src.dir}">
+	    <include name="gis\**\*.*"/>
+	    <include name="**\*.js"/>
+	    <include name="**\*.jsp"/>
+	    <include name="**\*.html"/>
+	    <include name="**\*.jpg"/>
+	    <include name="**\*.png"/>
+	    <include name="**\*.gif"/>
+		<include name="**\*.css"/>
+	  </fileset>
+	</copy>
+	 </target>
+	  <target name="staticNBN" description="Copy static files from src to dest NBN customizations only">
+	    <echo>Copying Source Files from ${src.webclient.src.dir.customizations} to ${dest.webclient.src.dir.customizations}</echo>
+	    <copy todir="${dest.webclient.src.dir.customizations}">
+	    <fileset dir="${src.webclient.src.dir.customizations}">
+	    <include name="gis\**\*.*"/>
+	    <include name="**\*.js"/>
+	    <include name="**\*.jsp"/>
+	    <include name="**\*.html"/>
+	    <include name="**\*.jpg"/>
+	    <include name="**\*.png"/>
+	    <include name="**\*.gif"/>
+		<include name="**\*.css"/>
+	  </fileset>
+	</copy>
+	 </target>
+
+	<target name="props" description="Create Maximo Properties">
+	  <echo>Copying Source Files from ${src.props.src.dir} to ${dest.props.src.dir}</echo>
+	  <copy todir="${dest.props.src.dir}">
+	    <fileset dir="${src.props.src.dir}">
+	      <!--<include name="**/*.xml"/>-->
+	    </fileset>
+	  </copy>
+	</target>
+
+	<target name="substituteBuildNumber">
+	  <echo>Setting build number in ${theFile}</echo>
+	  <replace file="${theFile}" token="BUILDXXX" value="${max.wwm.buildNumber}" />
+	</target>
+
+	<target name="setBuildNumber" description="Set build number in maximo product xml">
+	  <foreach target="substituteBuildNumber" param="theFile">
+	    <fileset dir="${dest.props.src.dir}">
+	      <include name="**/gbsnbn*.xml"/>
+	    </fileset>
+	  </foreach>
+	</target>
+
+	<target name="post" description="Clean and Copy pre-compiled">
+	  <echo>Cleaning Source Directory</echo>
+	  <!-- <delete dir="${src.release.dir}"/> -->
+	  <delete dir="${dest.maximoui.src.dir}"/>
+	  <delete dir="${dest.commonweb.src.dir}"/>
+	  <delete dir="${dest.maximotools.src.dir}"/>
+	  <delete dir="${dest.businessobjects.src.dir}"/>
+	  <antcall target="copyAll">
+	    <param name="source.dir" value="${src.release.dir}/pre-compiled"/>
+	    <param name="destination.dir" value="${dest.release.dir}"/>
+	  </antcall>
+	</target>
+
+	<target name="maxClean">
+	  <echo>Cleaning Maximo build space</echo>
+	  <echo>Working directory: ${max.workspace}</echo>
+	  <delete dir="${max.artefacts}"/>
+	  <delete dir="${max.smp}"/>
+	  <delete dir="${max.output}"/>
+	  <delete>
+	    <fileset dir="..">
+	      <include name="wwm-maximo-*.tar"/>
+	    </fileset>
+	  </delete>
+	  <delete file="${max.workspace}/${max.smp.log}"/>
+	  <delete file="${max.workspace}/${max.smp.cksum}"/>
+	  <delete file="${max.workspace}/local.md5"/>
+	</target>
+
+	  <target name="maxPrepare">
+	    <echo>Preparing Maximo build space</echo>
+	    <mkdir dir="${max.artefacts}"/>
+	    <mkdir dir="${max.allconfig.dir}"/>
+	    <mkdir dir="${max.config.dir}"/>
+	    <mkdir dir="${max.ejb.dir}"/>
+	    <mkdir dir="${max.deployment.descriptors.dir}"/>
+	    <exec executable="/bin/bash">
+	      <arg value="-c"/>
+	      <arg value="cp -rpL ${max.master.smp} ${max.smp}"/>
+	    </exec>
+	  </target>
+
+	  <target name="maxBuildConfig">
+	    <antcall target="banner">
+	      <param name="message" value="Building Maximo configuration"/>
+	    </antcall>
+	    <sequential>
+	      <echo>Copying template deployment descriptors</echo>
+	      <for list="maximouiweb,mboweb,maxrestweb,meaweb" param="subapp">
+	        <sequential>
+	          <mkdir dir="${max.deployment.descriptors.dir}/template/@{subapp}"/>
+	          <copy todir="${max.deployment.descriptors.dir}/template/@{subapp}">
+	            <fileset dir="${max.deployment.descriptor.archive.dir}/template/@{subapp}/webmodule/WEB-INF">
+	              <include name="web.xml"/>
+	            </fileset>
+	          </copy>
+	        </sequential>
+	      </for>
+	      <echo>Copying template EJB config for</echo>
+	      <copy todir="${max.ejb.dir}">
+	        <fileset dir="${max.ejb.application.dir}/template"/>
+	        <globmapper from="*" to="*.template"/>
+	      </copy>
+	      <echo>Copying template raw maximo.properties</echo>
+	      <copy todir="${max.config.dir}">
+	        <fileset dir="${max.raw.config.dir}"/>
+	      </copy>
+	    </sequential>
+	  </target>
+
+	  <target name="maxBuildConfigCITest">
+	    <antcall target="banner">
+	      <param name="message" value="Building Maximo configuration"/>
+	    </antcall>
+	    <property file="environments-citest.properties" prefix="max.environment."/>
+	    <propertyselector property="environments" match="max\.environment\.(.*)" select="\1"/>
+	    <for list="${environments}" param="environment">
+	      <sequential>
+	        <antcall target="banner">
+	          <param name="message" value="Building configuration for environment @{environment}"/>
+	        </antcall>
+	        <echo>Copying deployment descriptors for @{environment}</echo>
+	        <for list="maximouiweb,mboweb,maxrestweb,meaweb" param="subapp">
+	          <sequential>
+	            <mkdir dir="${max.deployment.descriptors.dir}/@{environment}/@{subapp}"/>
+	            <copy todir="${max.deployment.descriptors.dir}/@{environment}/@{subapp}">
+	              <fileset dir="${max.deployment.descriptor.archive.dir}/@{environment}/@{subapp}/webmodule/WEB-INF">
+	                <include name="web.xml"/>
+	              </fileset>
+	            </copy>
+	          </sequential>
+	        </for>
+	        <echo>Copying EJB config for @{environment}</echo>
+	        <copy todir="${max.ejb.dir}">
+	          <fileset dir="${max.ejb.application.dir}/@{environment}"/>
+	          <globmapper from="*" to="*.@{environment}"/>
+	        </copy>
+	        <echo>Copying raw maximo.properties files for @{environment}</echo>
+	        <copy todir="${max.config.dir}">
+	          <fileset dir="${max.raw.config.dir}"/>
+	        </copy>
+	        <echo>Appending unencrypted Maximo DB password to maximo.properties file for @{environment}</echo>
+	        <exec executable="sh" failOnError="true">
+	          <arg value="-c"/>
+	          <arg value="echo ${vault.password} | gpg --no-tty --passphrase-fd 0 --output ${max.encrypted.config.dir}/@{environment} --decrypt ${max.encrypted.config.dir}/@{environment}.gpg"/>
+	        </exec>
+	        <concat destfile="${max.config.dir}/maximo.properties.@{environment}" append="true">
+	          <filelist dir="${max.encrypted.config.dir}" files="@{environment}"/>
+	        </concat>
+	        <delete file="${max.encrypted.config.dir}/@{environment}"/>
+	        <echo>Encrypting and finalising maximo.properties file for @{environment}</echo>
+	        <copy file="${max.config.dir}/maximo.properties.@{environment}" tofile="${max.smp.properties.dir}/maximo.properties"/>
+	        <exec dir="${max.smp.tools.dir}" executable="./encryptproperties.sh"/>
+	        <copy file="${max.smp.properties.dir}/maximo.properties" tofile="${max.config.dir}/maximo.properties.@{environment}"/>
+	        <delete file="${max.smp.properties.dir}/maximo.properties"/>
+	      </sequential>
+	    </for>
+	  </target>
+
+	  <target name="maxCopyCustomJSP" description="Copy custom jsp to maximouiweb for test purposes">
+	    <property name="custom.jsp.dir" value="./jsp"/>
+	    <property name="webclient.utility.dir" value="../SMP/maximo/applications/maximo/maximouiweb/webmodule/webclient/utility/"/>
+	    <copy todir="${webclient.utility.dir}">
+	      <fileset dir="${custom.jsp.dir}"/>
+	    </copy>
+	  </target>
+
+	  <target name="maxBuildClasses" description="Builds classes required for Maximo" depends="maxCopyCustomJSP,all">
+	  </target>
+
+	  <target name="maxCopyClasses">
+	    <echo>Building Maximo classes</echo>
+	    <mkdir dir="${max.smp.tools.dir}/en"/>
+	    <for list="applications,tools" param="compiledClasses">
+	      <sequential>
+	        <antcall target="copyAll">
+	          <param name="source.dir" value="${max.output}/${max.wwm.buildNumber}/@{compiledClasses}"/>
+	          <param name="destination.dir" value="${max.smp}/maximo/@{compiledClasses}"/>
+	        </antcall>
+	      </sequential>
+	    </for>
+	    <copy todir="${max.smp}/maximo/tools/maximo/">
+	      <fileset dir="${max.tools.dir}/maximo">
+	        <include name="**\*.sh"/>
+	        <include name="**\*.xml"/>
+	      </fileset>
+	    </copy>
+	    <antcall target="copyAll">
+	      <param name="source.dir" value="${max.tools.dir}/maximo/en"/>
+	      <param name="destination.dir" value="${max.smp}/maximo/tools/maximo/en"/>
+	    </antcall>
+	    <antcall target="copyAll">
+	      <param name="source.dir" value="${max.oracleapis.dir}/apisuser"/>
+	      <param name="destination.dir" value="${max.smp}/maximo/ORACLEAPIS/wwmapisuser"/>
+	    </antcall>
+	    <antcall target="copyAll">
+	      <param name="source.dir" value="${max.oracleapis.dir}/concurrent"/>
+	      <param name="destination.dir" value="${max.smp}/maximo/ORACLEAPIS/wwmconcurrent"/>
+	    </antcall>
+	    <antcall target="copyAll">
+	      <param name="source.dir" value="${max.oracleapis.dir}/install"/>
+	      <param name="destination.dir" value="${max.smp}/maximo/ORACLEAPIS/wwminstall"/>
+	    </antcall>
+	    <antcall target="copyAll">
+	      <param name="source.dir" value="${max.oracleapis.dir}/interfac"/>
+	      <param name="destination.dir" value="${max.smp}/maximo/ORACLEAPIS/wwminterfac"/>
+	    </antcall>
+		<!--
+	    <antcall target="copyAll">
+	      <param name="source.dir" value="${max.oracleapis.dir}/log"/>
+	      <param name="destination.dir" value="${max.smp}/maximo/ORACLEAPIS/wwmlog"/>
+	    </antcall>-->
+	    <antcall target="copyAll">
+	      <param name="source.dir" value="${max.properties.dir}"/>
+	      <param name="destination.dir" value="${max.smp.properties.dir}"/>
+	    </antcall>
+	    <antcall target="copyAll">
+	      <param name="source.dir" value="${max.product.dir}"/>
+	      <param name="destination.dir" value="${max.smp.product.dir}"/>
+	    </antcall>
+	  </target>
+
+	  <target name="maxBuildEar">
+	    <echo>Building maximo.ear</echo>
+	    <copy file="${max.tools.dir}/buildmaximoearwas8.sh" tofile="${max.smp}/maximo/deployment/buildmaximoearwas8.sh"/>
+	    <chmod file="${max.smp}/maximo/tools/ant/bin/ant" perm="755"/>
+	    <exec executable="/bin/sh" dir="${max.smp}/maximo/deployment" failOnError="true">
+	      <arg value="buildmaximoearwas8.sh"/>
+	    </exec>
+	    <copy file="${max.smp}/maximo/deployment/default/maximo.ear" tofile="${max.artefacts}/maximo.ear"/>
+	  </target>
+
+	  <target name="maxSonarScan">
+	    <antcall target="banner">
+	      <param name="message" value="Running Sonar Scan"/>
+	    </antcall>
+	    <replace file="${max.workspace}/sonar-project.properties">
+	      <replacefilter token="XXXXBRANCHXXXX" value="${max.rpm.release.name}" />
+	      <replacefilter token="XXXXVERSIONXXXX" value="${max.wwm.buildNumber}" />
+	      <replacefilter token="XXXXBUILDDIRXXXX" value="wwm-maximo-build/${max.wwm.buildNumber}" />
+	    </replace>
+	    <exec executable="sh" failOnError="false" dir="${max.workspace}">
+	      <arg value="-c"/>
+	      <arg value="/opt/sonar-scanner-2.8/bin/sonar-scanner"/>
+	    </exec>
+	  </target>
+
+	  <target name="all" description="Run tasks in order" depends="clean,libs,businessobjects,maximoui,commonweb,maximotools,maxSonarScan,static,props,setBuildNumber,post">
+	    <echo>Build Complete</echo>
+	  </target>
+
+	  <target name="maxBuildAll" description="Build the whole of Maximo" depends="maxClean,maxPrepare,maxBuildConfig,all,maxCopyCustomJSP,maxCopyClasses,maxBuildEar"/>
+
+	  <target name="maxBuildCITest" description="Build the whole of Maximo" depends="maxClean,maxPrepare,maxBuildConfigCITest,all,maxCopyCustomJSP,maxCopyClasses,maxBuildEar"/>
+
+	  <target name="maxPackageClean" description="Clean Maximo RPM build directory">
+	    <antcall target="banner">
+	      <param name="message" value="Cleaning Maximo RPM build directory"/>
+	    </antcall>
+	    <delete dir="${max.rpm.build.dir}"/>
+	  </target>
+
+	  <target name="maxPackagePrepare" description="Prepare Maximo RPM build directory">
+	    <antcall target="banner">
+	      <param name="message" value="Preparing Maximo RPM build directory"/>
+	    </antcall>
+	    <mkdir dir="${max.rpm.build.dir}"/>
+		<!--create conf directory to support https -->  
+		<mkdir dir="${max.rpm.meaweb.dir}"/>
+	  </target>
+
+	  <target name="maxPackageConfigCopy">
+	    <antcall target="banner">
+	      <param name="message" value="Copying all Maximo configuration"/>
+	    </antcall>
+	    <mkdir dir="${max.rpm.config.dir}/config"/>
+	    <antcall target="copyAll">
+	      <param name="source.dir" value="${max.config.dir}"/>
+	      <param name="destination.dir" value="${max.rpm.config.dir}/config"/>
+	    </antcall>
+	    <mkdir dir="${max.rpm.config.dir}/ejb"/>
+	    <antcall target="copyAll">
+	      <param name="source.dir" value="${max.ejb.dir}"/>
+	      <param name="destination.dir" value="${max.rpm.config.dir}/ejb"/>
+	    </antcall>
+	    <mkdir dir="${max.rpm.config.dir}/deployment_descriptors"/>
+	    <antcall target="copyAll">
+	      <param name="source.dir" value="${max.deployment.descriptors.dir}"/>
+	      <param name="destination.dir" value="${max.rpm.config.dir}/deployment_descriptors"/>
+	    </antcall>
+	    <mkdir dir="${max.rpm.config.dir}/bin"/>
+	    <copy file="${max.tools.dir}/versioner.py" tofile="${max.rpm.config.dir}/bin/versioner.py"/>
+	    <copy file="${max.tools.dir}/applist.jy" tofile="${max.rpm.config.dir}/bin/applist.jy"/>
+	    <copy file="${max.tools.dir}/wwm-maximo-postinstall.sh" tofile="${max.rpm.config.dir}/bin/wwm-maximo-postinstall.sh"/>
+	    <copy file="${max.tools.dir}/testinstall.sh" tofile="${max.rpm.config.dir}/bin/testinstall.sh"/>
+	    <copy file="${max.tools.dir}/env.sh" tofile="${max.rpm.config.dir}/bin/env.sh"/>
+	    <propertyfile file="${max.rpm.maximo.dir}/build.properties">
+	      <entry  key="MAX_WWM_BUILDNUMBER" value="${max.wwm.buildNumber}"/>
+	      <entry  key="MAX_WWM_MAJORVERSION" value="${max.wwm.majorVersion}"/>
+	      <entry  key="MAX_WWM_MINORVERSION" value="${max.wwm.minorVersion}"/>
+	      <entry  key="MAX_WWM_PATCHVERSION" value="${max.wwm.patchVersion}"/>
+	    </propertyfile>
+	  </target>
+
+	  <target name="maxPackageSupportCopy">
+	    <antcall target="banner">
+	      <param name="message" value="Copying MEA Global files"/>
+	    </antcall>
+	    <antcall target="copyAll">
+	      <param name="source.dir" value="./documentation/gbsnbn/meaglobal"/>
+	      <param name="destination.dir" value="${max.rpm.maximofolders.dir}/meaglobal"/>
+	    </antcall>
+	    <antcall target="banner">
+	      <param name="message" value="Copying operation scripts"/>
+	    </antcall>
+	    <antcall target="copyAll">
+	      <param name="source.dir" value="./documentation/gbsnbn/database/operationscripts"/>
+	      <param name="destination.dir" value="${max.rpm.ops.scripts.dir}"/>
+	    </antcall>
+	    <antcall target="banner">
+	      <param name="message" value="Copying Maximo classes"/>
+	    </antcall>
+	    <for list="applications/maximo/businessobjects,applications/maximo/maximouiweb,applications/maximo/commonweb,applications/maximo/properties,tools" param="compiledClasses">
+	      <sequential>
+	        <mkdir dir="${max.rpm.smp.dir}/maximo/@{compiledClasses}"/>
+	        <antcall target="copyAll">
+	          <param name="source.dir" value="${max.output}/${max.wwm.buildNumber}/@{compiledClasses}"/>
+	          <param name="destination.dir" value="${max.rpm.smp.dir}/maximo/@{compiledClasses}"/>
+	        </antcall>
+	      </sequential>
+	    </for>
+	    <antcall target="copyAll">
+	      <param name="source.dir" value="${max.tools.dir}/maximo/en"/>
+	      <param name="destination.dir" value="${max.rpm.smp.dir}/maximo/tools/maximo/en"/>
+	    </antcall>
+	    <antcall target="copyAll">
+	      <param name="source.dir" value="${max.oracleapis.dir}/apisuser"/>
+	      <param name="destination.dir" value="${max.rpm.smp.dir}/maximo/ORACLEAPIS/wwmapisuser"/>
+	    </antcall>
+	    <antcall target="copyAll">
+	      <param name="source.dir" value="${max.oracleapis.dir}/concurrent"/>
+	      <param name="destination.dir" value="${max.rpm.smp.dir}/maximo/ORACLEAPIS/wwmconcurrent"/>
+	    </antcall>
+	    <antcall target="copyAll">
+	      <param name="source.dir" value="${max.oracleapis.dir}/install"/>
+	      <param name="destination.dir" value="${max.rpm.smp.dir}/maximo/ORACLEAPIS/wwminstall"/>
+	    </antcall>
+	    <antcall target="copyAll">
+	      <param name="source.dir" value="${max.oracleapis.dir}/interfac"/>
+	      <param name="destination.dir" value="${max.rpm.smp.dir}/maximo/ORACLEAPIS/wwminterfac"/>
+	    </antcall>
+	    <!--
+		<antcall target="copyAll">
+	      <param name="source.dir" value="${max.oracleapis.dir}/log"/>
+	      <param name="destination.dir" value="${max.rpm.smp.dir}/maximo/ORACLEAPIS/wwmlog"/>
+	    </antcall>-->
+	    <antcall target="copyAll">
+	      <param name="source.dir" value="${max.properties.dir}"/>
+	      <param name="destination.dir" value="${max.rpm.properties.dir}"/>
+	    </antcall>
+	    <antcall target="copyAll">
+	      <param name="source.dir" value="${max.product.dir}"/>
+	      <param name="destination.dir" value="${max.rpm.product.dir}"/>
+	    </antcall>
+	  </target>
+
+	  <target name="maxPackageEarCopy">
+	    <antcall target="banner">
+	      <param name="message" value="Copying maximo.ear"/>
+	    </antcall>
+	    <copy file="${max.artefacts}/maximo.ear" tofile="${max.rpm.ear.dir}/maximo.ear"/>
+	  </target>
+
+	  <target name="substituteWWMVersion">
+	    <antcall target="banner">
+	      <param name="message" value="Setting WWMVersion number in pre-install.sh"/>
+	    </antcall>
+	    <replace file="${max.workspace}/scripts/pre-install.sh" token="XXXXXWWM_VERSIONXXXXX" value="${max.wwm.majorVersion}:${max.wwm.minorVersion}:${max.wwm.patchVersion}" />
+	  </target>
+
+	  <target name="maxPackageBuild">
+	    <antcall target="banner">
+	      <param name="message" value="Creating and uploading RPM"/>
+	    </antcall>
+	    <exec executable="sh" failOnError="true" dir="${max.workspace}">
+	      <arg value="-c"/>
+	      <arg value="/usr/local/bin/release"/>
+	    </exec>
+	  </target>
+
+	  <target name="sign" description="Sign maximo RPM">
+	    <property name="rpm.arch" value="noarch"/>
+	    <antcall target="banner">
+	      <param name="message" value="Signing maximo RPM"/>
+	    </antcall>
+	    <exec executable="sh" failOnError="true" dir="${max.app.build.base}">
+	      <arg value="-c"/>
+	      <arg value="mco rpmsign --location private --team wwm --project maximo-packages --arch noarch --build_ver ${max.wwm.buildNumber} -T infrastructure -I svpos0000006pr.nbndc.local; echo DEBUG: result code: $?"/>
+	    </exec>
+	  </target>
+
+	  <target name="maxPackage" depends="maxPackageClean,maxPackagePrepare,maxPackageConfigCopy,maxPackageSupportCopy,maxPackageEarCopy,substituteWWMVersion,maxPackageBuild"/>
+
+	  <!-- ACCEPTANCE TEST PROPERTIES AND TARGETS. -->
+
+	  <property name="junit.src.dir" location="test/src/test/java" />
+	  <property name="junit.resources.dir" location="test/src/test/resources" />
+
+	  <property name="junit.build.dir" location="test/bin" />
+
+	  <!-- Variables used for JUnit testing -->
+	  <property name="junit.test.report.dir" location="testreport-junit" />
+	  <property name="filter" value="" />
+
+	  <!-- Define the classpath which includes the junit.jar and the classes after compiling-->
+	  <path id="junit.class.path">
+	    <pathelement location="${junit.build.dir}" />
+	    <fileset dir="lib/">
+	      <include name="**/*.jar"/>
+	    </fileset>
+	  </path>
+
+	  <!-- Deletes the existing build, docs and dist directory-->
+	  <target name="clean-junit">
+	    <delete dir="${junit.build.dir}" />
+	    <delete dir="${junit.test.report.dir}" />
+	  </target>
+
+	  <!-- Creates the build, docs and dist directory-->
+	  <target name="makedir-junit">
+	    <mkdir dir="${junit.build.dir}" />
+	    <mkdir dir="${junit.test.report.dir}" />
+	  </target>
+
+	  <target name="compile-aspectj" depends="clean-junit, makedir-junit">
+	  	<echo>Compiling the classes using Aspecj compiler to weave the classes at runtime.</echo>
+	  	<aspectj:iajc source="1.6" srcdir="${junit.src.dir}"
+	  		destdir="${junit.build.dir}" classpathref="junit.class.path" />
+	  	<copy todir="${junit.build.dir}">
+	      <fileset dir="${junit.resources.dir}"/>
+	    </copy>
+	  </target>
+
+	  <!-- Run the JUnit Tests -->
+	  <!-- Output is XML -->
+	  <target name="acceptance-tests" depends="compile-aspectj">
+	  	<echo>JUnit is set to showoutput ${showoutput}.</echo>
+	  	<junit printsummary="on" fork="yes" haltonfailure="no" failureproperty="test.failed" clonevm="true" includeantruntime="true" showoutput="${showoutput}" >
+	      <jvmarg value="-javaagent:${basedir}/lib/aspectjweaver-1.7.4.jar" />
+	      <classpath refid="junit.class.path" />
+	      <classpath>
+	        <pathelement location="${junit.build.dir}" />
+	      </classpath>
+	      <formatter type="xml" />
+	      <batchtest todir="${junit.test.report.dir}">
+	        <fileset dir="${junit.build.dir}"
+	          includes ="**/*${filter}Tests.class" excludes="**/*$*.class">
+	        </fileset>
+	      </batchtest>
+	    </junit>
+	    <junitreport todir="${junit.test.report.dir}">
+	      <fileset dir="${junit.test.report.dir}"/>
+	      <report todir="${junit.test.report.dir}"/>
+	    </junitreport>
+	    <fail message="Test failure detected, check test results." if="test.failed" />
+	  </target>
+
+	  <target name="junit-spike" depends="acceptance-tests"/>
+
+	</project>

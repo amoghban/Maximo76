@@ -10,7 +10,7 @@
 	</version>
 	<dbmaxvarname>GBSIBM</dbmaxvarname>
 	<dbscripts>gbsibm</dbscripts> 
-	<dbversion>V7600-000</dbversion>
+	<dbversion>V7600-01</dbversion>
 	<lastdbversion>V7600-000</lastdbversion>
 	<depends>mam</depends>
 	<extensions>		

@@ -6,7 +6,7 @@
 	<target name="compile">
 
 		<delete>
-			<fileset dir="/opt/IBM/SMP/maximo/tools/maximo/en/automationscripts/">
+			<fileset dir="/opt/IBM/SMP/maximo/tools/maximo/en/">
 				<include name="**/*"/>
 			</fileset>
 			<fileset dir="/opt/IBM/SMP/maximo/applications/maximo/properties/product/">
